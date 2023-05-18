@@ -8,7 +8,7 @@ void DrawScene(int time)
 {
 	glPushMatrix();
 		glLineWidth(1.0f);
-		glColor3f(1.0f, 1.0f, 1.0f);
+		glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
 		DrawGrid(time);
 	glPopMatrix();
 
@@ -42,7 +42,7 @@ void DrawGrid(int time)
 
 	int yCount = 60;
 	float yDelta = 1.5f;
-	float timeDelta = (time % 25) / 25.0f;
+	float timeDelta = (time % 18) / 18.0f;
 
 	for (int i = -yCount; i < 0; ++i)
 	{

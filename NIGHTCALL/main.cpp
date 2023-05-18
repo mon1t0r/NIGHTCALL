@@ -5,8 +5,6 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define M_PI 3.14159265359
-
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
 void DisableOpenGL(HWND, HDC, HGLRC);
