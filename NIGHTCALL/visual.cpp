@@ -18,16 +18,6 @@ void DrawScene(int time, float xScale)
 	glPushMatrix();
 	glLoadIdentity();
 
-	glColor3f(0.0f, 0.0f, 0.0f);
-	glBegin(GL_TRIANGLE_STRIP);
-
-	glVertex2f(-1.0f, 0.0f);
-	glVertex2f(1.0f, 0.0f);
-	glVertex2f(-1.0f, 1.0f);
-	glVertex2f(1.0f, 1.0f);
-
-	glEnd();
-
 	glLineWidth(2.0f);
 	glColor3f(1.0f, 0.0f, 0.0f);
 	glBegin(GL_LINES);
@@ -54,7 +44,7 @@ void DrawGrid(int time, float xScale)
 
 	for (int i = -xCount; i <= xCount; ++i)
 	{
-		glVertex3f(i * xDelta, 9999.0f, 0.0f);
+		glVertex3f(i * xDelta, 89.5f, 0.0f);
 		glVertex3f(i * xDelta, 0.0f, 0.0f);
 	}
 
