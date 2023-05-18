@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <gl/gl.h>
+#include <glad/glad.h>
 #include <math.h>
 #include "visual.h"
 
@@ -55,8 +55,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		hInstance,
 		NULL);
 
-	ShowWindow(hwnd, nCmdShow);
 	EnableOpenGL(hwnd, &hDC, &hRC);
+
+	gladLoadGL();
+
+	ShowWindow(hwnd, nCmdShow);
 
 	RECT rect;
 	GetClientRect(hwnd, &rect);

@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <gl/gl.h>
+#include <glad/glad.h>
 #include <math.h>
 
 void DrawGrid(int time);
