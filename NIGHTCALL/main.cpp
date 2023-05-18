@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <cstdio>
+#include <iostream>
 #include <glad/glad.h>
 #include <math.h>
 #include "visual.h"
@@ -9,7 +11,7 @@ LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
 void DisableOpenGL(HWND, HDC, HGLRC);
 
-void WindowResize(int, int);
+void Init();
 
 
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -56,14 +58,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		NULL);
 
 	EnableOpenGL(hwnd, &hDC, &hRC);
-
-	gladLoadGL();
-
+	Init();
 	ShowWindow(hwnd, nCmdShow);
 
 	RECT rect;
 	GetClientRect(hwnd, &rect);
-	WindowResize(rect.right, rect.bottom);
+	Rescale(rect.right, rect.bottom);
 
 	while (!bQuit)
 	{
@@ -81,8 +81,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		}
 		else
 		{
-			glClear(GL_COLOR_BUFFER_BIT);
-
 			DrawScene(time);
 
 			glFlush();
@@ -112,7 +110,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	case WM_SIZE:
-		WindowResize(LOWORD(lParam), HIWORD(lParam));
+		Rescale(LOWORD(lParam), HIWORD(lParam));
 		break;
 
 	case WM_KEYDOWN:
@@ -168,10 +166,14 @@ void DisableOpenGL(HWND hwnd, HDC hDC, HGLRC hRC)
 	ReleaseDC(hwnd, hDC);
 }
 
-void WindowResize(int x, int y) {
-	glViewport(0, 0, x, y);
-	float ratio = x / (float)y;
-	float sz = 1.0;
-	glLoadIdentity();
-	glFrustum(-ratio * sz, ratio * sz, -sz, sz, 10, 1000);
+void Init()
+{
+	AllocConsole();
+	FILE* fpstdin = stdin, * fpstdout = stdout, * fpstderr = stderr;
+	freopen_s(&fpstdin, "CONIN$", "r", stdin);
+	freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+	freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+
+	gladLoadGL();
+	InitVisual();
 }
