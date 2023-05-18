@@ -3,7 +3,7 @@
 #include <iostream>
 #include "shaders.h"
 
-void DrawMain(int time);
+void DrawMain(int time, float lineWidth);
 void DrawGrid(int time);
 
 GLuint bloom;
@@ -26,7 +26,7 @@ float rectangleVertices[] =
 
 void InitVisual()
 {
-	bloom = LoadShader("shaders/bloom.vert", "shaders/bloom.frag");//TODO: No actual bloom
+	bloom = LoadShader("shaders/bloom.vert", "shaders/bloom.frag");
 
 	glUniform1i(glGetUniformLocation(bloom, "screenTexture"), 0);
 
@@ -82,32 +82,30 @@ void DrawScene(int time)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
-	DrawMain(time);
+	DrawMain(time, 1.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glUseProgram(bloom);
 
 	glBindVertexArray(rectVAO);
 	glBindTexture(GL_TEXTURE_2D, framebufferTexture);
 
 	glDisable(GL_DEPTH_TEST);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-void DrawMain(int time)
-{
-	glUseProgram(0);
-	glPushMatrix();
-		glLineWidth(1.0f);
-		glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
-		DrawGrid(time);
-	glPopMatrix();
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	DrawMain(time, 1.0f);
+	glDisable(GL_BLEND);
 
 	glPushMatrix();
 		glLoadIdentity();
@@ -118,6 +116,16 @@ void DrawMain(int time)
 			glVertex2f(-1.0f, 0.0f);
 			glVertex2f(1.0f, 0.0f);
 		glEnd();
+	glPopMatrix();
+}
+
+void DrawMain(int time, float lineWidth)
+{
+	glUseProgram(0);
+	glPushMatrix();
+		glLineWidth(lineWidth);
+		glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
+		DrawGrid(time);
 	glPopMatrix();
 }
 
