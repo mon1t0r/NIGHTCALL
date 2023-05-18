@@ -1,3 +1,3 @@
 #pragma once
 
-void DrawScene(int, float);
+void DrawScene(int time);

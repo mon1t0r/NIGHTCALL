@@ -13,8 +13,6 @@ void DisableOpenGL(HWND, HDC, HGLRC);
 
 void WindowResize(int, int);
 
-float xScale;
-
 
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -84,7 +82,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			DrawScene(time, xScale);
+			DrawScene(time);
 
 			glFlush();
 			SwapBuffers(hDC);
@@ -171,8 +169,8 @@ void DisableOpenGL(HWND hwnd, HDC hDC, HGLRC hRC)
 
 void WindowResize(int x, int y) {
 	glViewport(0, 0, x, y);
-	xScale = x / (float)y;
+	float ratio = x / (float)y;
 	float sz = 1.0;
 	glLoadIdentity();
-	glFrustum(-xScale * sz, xScale * sz, -sz, sz, 10, 1000);
+	glFrustum(-ratio * sz, ratio * sz, -sz, sz, 10, 1000);
 }

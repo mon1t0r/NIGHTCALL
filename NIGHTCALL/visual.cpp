@@ -2,38 +2,30 @@
 #include <gl/gl.h>
 #include <math.h>
 
-#define FLOAT_MAX 1000.0000000000000000f
+void DrawGrid(int time);
 
-void DrawGrid(int, float);
-
-void DrawScene(int time, float xScale)
+void DrawScene(int time)
 {
 	glPushMatrix();
-
-	glLineWidth(1.0f);
-	DrawGrid(time, xScale);
-
+		glLineWidth(1.0f);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		DrawGrid(time);
 	glPopMatrix();
 
 	glPushMatrix();
-	glLoadIdentity();
+		glLoadIdentity();
+		glLineWidth(2.0f);
+		glColor3f(1.0f, 0.0f, 0.0f);
 
-	glLineWidth(2.0f);
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glBegin(GL_LINES);
-
-	glVertex2f(-1.0f, 0.0f);
-	glVertex2f(1.0f, 0.0f);
-
-	glEnd();
-
+		glBegin(GL_LINES);
+			glVertex2f(-1.0f, 0.0f);
+			glVertex2f(1.0f, 0.0f);
+		glEnd();
 	glPopMatrix();
 }
 
-void DrawGrid(int time, float xScale)
+void DrawGrid(int time)
 {
-	glColor3f(1.0f, 1.0f, 1.0f);
-
 	glTranslatef(0.0f, -1.1f, -5.0f);
 	glRotatef(-89.3f, 1.0f, 0.0f, 0.0f);
 
@@ -48,8 +40,8 @@ void DrawGrid(int time, float xScale)
 		glVertex3f(i * xDelta, 0.0f, 0.0f);
 	}
 
-	float yDelta = 1.5f;
 	int yCount = 60;
+	float yDelta = 1.5f;
 	float timeDelta = (time % 25) / 25.0f;
 
 	for (int i = -yCount; i < 0; ++i)
