@@ -50,7 +50,7 @@ void DrawGrid(int time, float xScale)
 	glBegin(GL_LINES);
 
 	int xCount = 43;
-	float xDelta = xScale * 0.3f;
+	float xDelta = 0.575f;
 
 	for (int i = -xCount; i <= xCount; ++i)
 	{
