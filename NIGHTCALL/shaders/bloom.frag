@@ -4,12 +4,13 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
-uniform bool horizontal;
+uniform int horizontal;
+uniform float alpha;
 
 // How far from the center to take samples from the fragment you are currently on
-const int radius = 24;
+const int radius = 6;
 // Keep it between 1.0f and 2.0f (the higher this is the further the blur reaches)
-float spreadBlur = 1.5f;
+float spreadBlur = 2.0f;
 float weights[radius];
 
 void main()
@@ -32,7 +33,7 @@ void main()
     vec3 result = texture(screenTexture, TexCoords).rgb * weights[0];
 
     // Calculate horizontal blur
-    if(horizontal)
+    if(horizontal != 0)
     {
         for(int i = 1; i < radius; i++)
         {
@@ -53,5 +54,5 @@ void main()
             result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * i)).rgb * weights[i];
         }
     }
-    FragColor = vec4(result, 0.3f);
+    FragColor = vec4(result, alpha);
 }

@@ -5,11 +5,15 @@
 
 void DrawMain(int time, float lineWidth);
 void DrawGrid(int time);
+void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer);
 
 GLuint bloom;
+GLuint _default;
 
-unsigned int FBO;
-unsigned int framebufferTexture;
+const int Buffers = 2;
+
+unsigned int FBO[Buffers];
+unsigned int FBTex[Buffers];
 unsigned int rectVAO, rectVBO;
 
 float rectangleVertices[] =
@@ -26,9 +30,11 @@ float rectangleVertices[] =
 
 void InitVisual()
 {
-	bloom = LoadShader("shaders/bloom.vert", "shaders/bloom.frag");
+	bloom = LoadShader("shaders/default.vert", "shaders/bloom.frag");
+	_default = LoadShader("shaders/default.vert", "shaders/default.frag");
 
 	glUniform1i(glGetUniformLocation(bloom, "screenTexture"), 0);
+	glUniform1i(glGetUniformLocation(_default, "screenTexture"), 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -54,23 +60,27 @@ void Rescale(int width, int height)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-	glGenFramebuffers(1, &FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	unsigned int RBO[Buffers];
 
-	glGenTextures(1, &framebufferTexture);
-	glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
+	for (int i = 0; i < Buffers; ++i)
+	{
+		glGenFramebuffers(1, &FBO[i]);
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO[i]);
 
-	unsigned int RBO;
-	glGenRenderbuffers(1, &RBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+		glGenTextures(1, &FBTex[i]);
+		glBindTexture(GL_TEXTURE_2D, FBTex[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBTex[i], 0);
+
+		glGenRenderbuffers(1, &RBO[i]);
+		glBindRenderbuffer(GL_RENDERBUFFER, RBO[i]);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO[i]);
+	}
 
 
 	auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -83,29 +93,44 @@ void DrawScene(int time)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO[0]);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
+	glUseProgram(0);
 
 	DrawMain(time, 1.0f);
 
+	int iter = 4;
+	glUseProgram(bloom);
+	glUniform1f(glGetUniformLocation(bloom, "alpha"), 1.0f);
+	for (int i = 0; i < iter; ++i)
+	{
+		if (i % 2)
+		{
+			glUseProgram(bloom);
+			glUniform1i(glGetUniformLocation(bloom, "horizontal"), 0);
+			DrawBuffer(bloom, FBTex[1], FBO[0]);
+			continue;
+		}
+		glUseProgram(bloom);
+		glUniform1i(glGetUniformLocation(bloom, "horizontal"), 1);
+		DrawBuffer(bloom, FBTex[0], FBO[1]);
+	}
+
+	glUseProgram(_default);
+	glUniform1f(glGetUniformLocation(_default, "alpha"), 0.5f);
+
+	if (iter % 2)
+		DrawBuffer(_default, FBTex[1], 0);
+	else
+		DrawBuffer(_default, FBTex[0], 0);
+
+	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glUseProgram(bloom);
-
-	glBindVertexArray(rectVAO);
-	glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 	DrawMain(time, 1.0f);
-	glDisable(GL_BLEND);
 
 	glPushMatrix();
 		glLoadIdentity();
@@ -117,6 +142,28 @@ void DrawScene(int time)
 			glVertex2f(1.0f, 0.0f);
 		glEnd();
 	glPopMatrix();
+}
+
+void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glBindVertexArray(rectVAO);
+	glBindTexture(GL_TEXTURE_2D, frameTexture);
+
+	glUseProgram(program);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(0);
 }
 
 void DrawMain(int time, float lineWidth)
