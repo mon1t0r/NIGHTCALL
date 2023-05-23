@@ -1,11 +1,13 @@
+#define _USE_MATH_DEFINES
 #include <windows.h>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include "shaders.h"
 
-void DrawMain(int time, float lineWidth);
+void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer, bool clearBuf);
+void BloomAndDrawToMain(int iter, int blurRadius, float blurAlpha, bool clearBuf);
 void DrawGrid(int time);
-void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer);
+void DrawSun(int time, float r);
 
 GLuint bloom;
 GLuint _default;
@@ -37,9 +39,6 @@ void InitVisual()
 	glUniform1i(glGetUniformLocation(_default, "screenTexture"), 0);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-	glFrontFace(GL_CCW);
 }
 
 void Rescale(int width, int height)
@@ -90,47 +89,32 @@ void Rescale(int width, int height)
 
 void DrawScene(int time)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO[0]);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
 	glUseProgram(0);
 
-	DrawMain(time, 1.0f);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO[0]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	int iter = 4;
-	glUseProgram(bloom);
-	glUniform1f(glGetUniformLocation(bloom, "alpha"), 1.0f);
-	for (int i = 0; i < iter; ++i)
-	{
-		if (i % 2)
-		{
-			glUseProgram(bloom);
-			glUniform1i(glGetUniformLocation(bloom, "horizontal"), 0);
-			DrawBuffer(bloom, FBTex[1], FBO[0]);
-			continue;
-		}
-		glUseProgram(bloom);
-		glUniform1i(glGetUniformLocation(bloom, "horizontal"), 1);
-		DrawBuffer(bloom, FBTex[0], FBO[1]);
-	}
+	DrawSun(time, 0.31f);
+	BloomAndDrawToMain(7, 5, 1.0f, true);
 
-	glUseProgram(_default);
-	glUniform1f(glGetUniformLocation(_default, "alpha"), 0.5f);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO[0]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	if (iter % 2)
-		DrawBuffer(_default, FBTex[1], 0);
-	else
-		DrawBuffer(_default, FBTex[0], 0);
+	DrawGrid(time);
+	BloomAndDrawToMain(4, 6, 0.5f, false);
 
 	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	DrawMain(time, 1.0f);
+	DrawSun(time, 0.3f);
+	DrawGrid(time);
 
 	glPushMatrix();
 		glLoadIdentity();
@@ -144,12 +128,43 @@ void DrawScene(int time)
 	glPopMatrix();
 }
 
-void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer)
+void BloomAndDrawToMain(int iter, int blurRadius, float blurAlpha, bool clearBuf)
+{
+	glUseProgram(bloom);
+	glUniform1f(glGetUniformLocation(bloom, "alpha"), 1.0f);
+	glUniform1i(glGetUniformLocation(bloom, "radius"), blurRadius);
+	for (int i = 0; i < iter; ++i)
+	{
+		if (i % 2)
+		{
+			glUseProgram(bloom);
+			glUniform1i(glGetUniformLocation(bloom, "horizontal"), 0);
+			DrawBuffer(bloom, FBTex[1], FBO[0], true);
+			continue;
+		}
+		glUseProgram(bloom);
+		glUniform1i(glGetUniformLocation(bloom, "horizontal"), 1);
+		DrawBuffer(bloom, FBTex[0], FBO[1], true);
+	}
+
+	glUseProgram(_default);
+	glUniform1f(glGetUniformLocation(_default, "alpha"), blurAlpha);
+
+	if (iter % 2)
+		DrawBuffer(_default, FBTex[1], 0, clearBuf);
+	else
+		DrawBuffer(_default, FBTex[0], 0, clearBuf);
+}
+
+void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer, bool clearBuf)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	if (clearBuf)
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	}
 
 	glBindVertexArray(rectVAO);
 	glBindTexture(GL_TEXTURE_2D, frameTexture);
@@ -166,18 +181,11 @@ void DrawBuffer(GLuint program, GLuint frameTexture, GLuint frameBuffer)
 	glUseProgram(0);
 }
 
-void DrawMain(int time, float lineWidth)
-{
-	glUseProgram(0);
-	glPushMatrix();
-		glLineWidth(lineWidth);
-		glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
-		DrawGrid(time);
-	glPopMatrix();
-}
-
 void DrawGrid(int time)
 {
+	glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
+	glPushMatrix();
+
 	glTranslatef(0.0f, -1.1f, -5.0f);
 	glRotatef(-89.3f, 1.0f, 0.0f, 0.0f);
 
@@ -204,4 +212,28 @@ void DrawGrid(int time)
 	}
 
 	glEnd();
+	glPopMatrix();
+}
+
+void DrawSun(int time, float r)
+{
+	int gColMin = 95, gColDelta = 116;
+
+	glPushMatrix();
+
+	glTranslatef(0.0f, 0.5f, -11.0f);
+
+	glBegin(GL_TRIANGLE_FAN);
+
+	glColor3f(255 / 255.0f, (gColMin + 0.5f * gColDelta) / 255.0f, 79 / 255.0f);
+	glVertex2f(0.0f, 0.0f);
+	for (int i = 0; i <= 360; ++i)
+	{
+		float sin = sinf(i * M_PI / 180.0f);
+		glColor3f(255 / 255.0f, (gColMin + (sin + 1) * 0.5f * gColDelta) / 255.0f, 79 / 255.0f);
+		glVertex2f(cosf(i * M_PI / 180.0f) * r, sin * r);
+	}
+
+	glEnd();
+	glPopMatrix();
 }

@@ -6,15 +6,17 @@ in vec2 TexCoords;
 uniform sampler2D screenTexture;
 uniform int horizontal;
 uniform float alpha;
-
 // How far from the center to take samples from the fragment you are currently on
-const int radius = 6;
+uniform int radius;
+
+const int maxRadius = 12;
+
 // Keep it between 1.0f and 2.0f (the higher this is the further the blur reaches)
 float spreadBlur = 2.0f;
-float weights[radius];
+float weights[maxRadius];
 
 void main()
-{             
+{
     // Calculate the weights using the Gaussian equation
     float x = 0.0f;
     for (int i = 0; i < radius; i++)
