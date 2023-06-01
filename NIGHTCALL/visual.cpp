@@ -119,7 +119,7 @@ void DrawScene(int time)
 	glPushMatrix();
 		glLoadIdentity();
 		glLineWidth(2.0f);
-		glColor3f(1.0f, 0.0f, 0.0f);
+		glColor3f(189 / 255.0f, 99 / 255.0f, 195 / 255.0f);
 
 		glBegin(GL_LINES);
 			glVertex2f(-1.0f, 0.0f);
